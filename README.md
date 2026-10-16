@@ -36,11 +36,11 @@ python app.py
 
 Open the URL printed in the terminal. If port 5000 is occupied, the app uses 5001 automatically.
 
-## Admin and demo data
+## Admin and data
 
 The default admin PIN is **1234**. Change `ADMIN_PIN` in `config.py` before sharing the project. Five incorrect attempts block that browser session for one minute.
 
-Demo data is kept in `data/venues.json`, `data/timetable.json`, and `data/bookings.json`. Venue rows contain a name, type, and capacity. Timetable rows contain venue, weekday, slot, and lecture. Booking rows contain a request ID, contact details, date, slots, status, and optional decision reason. Edit the timetable JSON to replace the demo weekly schedule. The three demo requests receive dates relative to the day the server starts.
+The fresh project data contains the 14 venue definitions and an empty timetable and booking list. Venue rows contain a name, type, and capacity. Timetable rows contain venue, weekday, slot, and lecture. Booking rows contain a request ID, contact details, date, slots, status, and optional decision reason.
 
 ## College venues
 
@@ -55,13 +55,13 @@ In Admin → Timetable, upload a clear image. Browser OCR automatically imports 
 1. Create a Supabase project.
 2. Open **SQL Editor** and run the contents of `supabase_schema.sql`.
 3. In the Supabase project settings, copy the project URL and the **service_role** key.
-4. Add these environment variables to the server (Render: **Dashboard → Environment**):
+4. For local development, copy `.env.example` to `.env` and fill in the values. The app reads `.env` automatically; it is ignored by Git. For Render, add the same variables in **Dashboard → Environment**:
    - `SUPABASE_URL` — project URL
    - `SUPABASE_SERVICE_ROLE_KEY` — service-role secret; keep it server-side and out of GitHub
    - `LOOPIN_SECRET_KEY` — a long random value for Flask sessions
-5. Redeploy. When both Supabase variables are present, venue, timetable, and booking data use the `spaces_store` table. Without them, local development uses the JSON files.
+5. Start locally with `bash run.sh`, or redeploy Render. When both Supabase variables are present, venue, timetable, and booking data use the `spaces_store` table. On first connection, the current local JSON files seed any missing Supabase rows. Here the timetable and bookings are empty so your new database starts fresh; the 14 venue definitions are retained.
 
-Never add the service-role key to JavaScript or commit it to the repository. Render's filesystem may reset between deploys, so Supabase is recommended for persistent bookings.
+Never add the service-role key to JavaScript, paste it into chat, or commit `.env` to the repository. Render's filesystem may reset between deploys, so Supabase is recommended for persistent bookings.
 
 ## Deploy manually on Render
 
