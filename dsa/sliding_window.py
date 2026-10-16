@@ -1,4 +1,6 @@
-"""A moving window finds consecutive free slots without crossing lunch."""
+"""A moving window finds consecutive free slots without crossing long breaks."""
+
+from config import SLOT_BREAKS
 
 def find_windows(free_slots, slots, hours):
     """Return every run of free slots that is long enough."""
@@ -8,8 +10,8 @@ def find_windows(free_slots, slots, hours):
     runs, current = [], []
     previous_slot = None
     for index, slot in enumerate(slots):
-        # These two slots touch in the list but lunch separates them in real time.
-        if previous_slot == "12-1" and slot == "2-3":
+        # These periods touch in the list but a long campus break separates them.
+        if (previous_slot, slot) in SLOT_BREAKS:
             current = []
         if slot in available:
             current.append(slot)
@@ -18,5 +20,5 @@ def find_windows(free_slots, slots, hours):
         else:
             current = []
         previous_slot = slot
-    # The configured slot list jumps over lunch, so windows never include it.
+    # The configured slot list marks long campus breaks explicitly above.
     return runs

@@ -4,7 +4,7 @@
 2. **Why use a queue?** Requests should be considered first come, first served. Enqueue and dequeue are O(1) with front and rear nodes.
 3. **How is the queue built?** Each node points to the next node. The app reads pending requests from JSON when it starts and puts them in order.
 4. **What does merge sort do?** It splits a list, sorts each half, and merges them. Its time complexity is O(n log n).
-5. **What is the sliding window?** It checks a moving group of consecutive slots to find a run of the requested length. It stops at lunch because lunch is a gap in the slot list.
+5. **What is the sliding window?** It checks a moving group of consecutive periods to find a run of the requested length. It stops at the long campus breaks between timetable periods.
 6. **What is greedy best fit?** It picks the smallest room that fits the group and time request, saving larger rooms. Sorting candidates takes O(n log n).
 7. **What is a trie?** A tree of letters that can find names from a prefix. It powers room-name search.
 8. **How does the app avoid a booking clash?** Before approval, it checks every requested slot against lectures and already approved bookings.

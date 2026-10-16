@@ -1,6 +1,6 @@
 """Central rules for whether a date-specific venue slot can be requested."""
 from datetime import date
-from config import SLOTS
+from config import SLOTS, SLOT_BREAKS
 from dsa.hash_map_store import HashMapStore
 
 def slot_status(venue, day, date_text, slot, timetable, bookings):
@@ -35,9 +35,10 @@ def check_request(payload, venues, timetable, bookings):
     if start > end:
         return "End time must come after start time."
     chosen = SLOTS[start:end + 1]
-    # Adjacent slots separated by lunch are not one continuous booking.
-    if "12-1" in chosen and "2-3" in chosen:
-        return "Bookings can’t cross the 1–2 lunch break."
+    # Adjacent timetable periods separated by a long campus break are not continuous.
+    for before, after in SLOT_BREAKS:
+        if before in chosen and after in chosen:
+            return "Bookings can’t cross a break between timetable periods."
     day = target.strftime("%A")
     for slot in chosen:
         result = slot_status(payload["venue"], day, payload["date"], slot, timetable, bookings)

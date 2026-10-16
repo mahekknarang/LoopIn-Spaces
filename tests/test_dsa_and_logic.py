@@ -30,11 +30,11 @@ class QueueTests(unittest.TestCase):
 
 class SlidingWindowTests(unittest.TestCase):
     def test_finds_only_consecutive_slots_and_skips_lunch(self):
-        free = ["11-12", "2-3", "3-4", "4-5"]
-        self.assertEqual(find_windows(free, SLOTS, 2), [["2-3", "3-4"], ["3-4", "4-5"]])
+        free = ["9:45-10:40", "11:15-12:10", "12:15-1:10", "1:15-2:10", "2:45-3:40", "3:45-4:40", "4:45-5:40"]
+        self.assertEqual(find_windows(free, SLOTS, 2), [["11:15-12:10", "12:15-1:10"], ["12:15-1:10", "1:15-2:10"], ["2:45-3:40", "3:45-4:40"], ["3:45-4:40", "4:45-5:40"]])
 
     def test_lunch_does_not_make_a_two_hour_window(self):
-        self.assertEqual(find_windows(["12-1", "2-3"], SLOTS, 2), [])
+        self.assertEqual(find_windows(["1:15-2:10", "2:45-3:40"], SLOTS, 2), [])
 
 class GreedyTests(unittest.TestCase):
     def test_chooses_smallest_room_that_fits(self):
@@ -44,33 +44,33 @@ class GreedyTests(unittest.TestCase):
 class ClashCheckerTests(unittest.TestCase):
     def setUp(self):
         self.venues = [{"name":"LR 1", "capacity":40}]
-        self.timetable = [{"venue":"LR 1", "day":"Monday", "slot":"9-10", "lecture":"DSA"}]
+        self.timetable = [{"venue":"LR 1", "day":"Monday", "slot":SLOTS[0], "lecture":"DSA"}]
         self.bookings = []
-        self.payload = {"name":"A", "contact":"a@college.edu", "event":"Meet", "purpose":"Club", "venue":"LR 1", "date":"2099-10-19", "start":"9-10", "end":"9-10"}
+        self.payload = {"name":"A", "contact":"a@college.edu", "event":"Meet", "purpose":"Club", "venue":"LR 1", "date":"2099-10-19", "start":SLOTS[0], "end":SLOTS[0]}
 
     def test_lecture_clash_is_friendly(self):
         self.assertIn("DSA", check_request(self.payload, self.venues, self.timetable, self.bookings))
 
     def test_approved_booking_clash(self):
         self.timetable = []
-        self.bookings = [{"venue":"LR 1", "date":"2099-10-19", "slots":["9-10"], "status":"Approved", "event":"Meet"}]
+        self.bookings = [{"venue":"LR 1", "date":"2099-10-19", "slots":[SLOTS[0]], "status":"Approved", "event":"Meet"}]
         self.assertIn("taken", check_request(self.payload, self.venues, self.timetable, self.bookings))
 
     def test_pending_request_does_not_block_another_request(self):
         self.timetable = []
-        self.bookings = [{"venue":"LR 1", "date":"2099-10-19", "slots":["9-10"], "status":"Pending", "event":"Meet"}]
+        self.bookings = [{"venue":"LR 1", "date":"2099-10-19", "slots":[SLOTS[0]], "status":"Pending", "event":"Meet"}]
         self.assertIsNone(check_request(self.payload, self.venues, self.timetable, self.bookings))
 
     def test_lunch_break_is_not_bookable_across(self):
-        self.payload.update(start="12-1", end="2-3")
-        self.assertIn("lunch", check_request(self.payload, self.venues, [], []))
+        self.payload.update(start="1:15-2:10", end="2:45-3:40")
+        self.assertIn("break", check_request(self.payload, self.venues, [], []))
 
 class ApprovalTests(unittest.TestCase):
     def test_approval_rejects_other_pending_clash(self):
         date_text = "2099-10-19"
         bookings = [
-            {"id":"BK-2001", "name":"One", "contact":"x", "event":"First", "purpose":"Meet", "venue":"LR 1", "date":date_text, "slots":["4-5"], "status":"Pending", "created_at":"2099-01-01T09:00:00"},
-            {"id":"BK-2002", "name":"Two", "contact":"x", "event":"Second", "purpose":"Meet", "venue":"LR 1", "date":date_text, "slots":["4-5"], "status":"Pending", "created_at":"2099-01-01T09:01:00"},
+            {"id":"BK-2001", "name":"One", "contact":"x", "event":"First", "purpose":"Meet", "venue":"LR 1", "date":date_text, "slots":[SLOTS[-1]], "status":"Pending", "created_at":"2099-01-01T09:00:00"},
+            {"id":"BK-2002", "name":"Two", "contact":"x", "event":"Second", "purpose":"Meet", "venue":"LR 1", "date":date_text, "slots":[SLOTS[-1]], "status":"Pending", "created_at":"2099-01-01T09:01:00"},
         ]
         data = {"bookings": bookings, "venues":[{"name":"LR 1", "capacity":40}], "timetable":[]}
         def load(name): return data[name]

@@ -38,7 +38,7 @@ Open the URL printed in the terminal. If port 5000 is occupied, the app uses 500
 
 ## Admin and data
 
-The default admin PIN is **1234**. Change `ADMIN_PIN` in `config.py` before sharing the project. Five incorrect attempts block that browser session for one minute.
+The local demo admin PIN is **1234**. For a deployed service, set a private `ADMIN_PIN` environment variable in Render. Five incorrect attempts block that browser session for one minute.
 
 The fresh project data contains the 14 venue definitions and an empty timetable and booking list. Venue rows contain a name, type, and capacity. Timetable rows contain venue, weekday, slot, and lecture. Booking rows contain a request ID, contact details, date, slots, status, and optional decision reason.
 
@@ -48,7 +48,7 @@ The venue list is preloaded with LR1–LR6, LAB1–LAB5, BDA LAB, XICA AUDI, and
 
 ## Importing a timetable image
 
-In Admin → Timetable, upload a clear image. Browser OCR automatically imports rows that contain the venue, weekday, time slot, and class name together (for example: `LR1 Monday 9-10 DSA`). The import replaces the current weekly timetable after it finds valid entries. If the image layout is too complex or recognition fails, the existing timetable is kept; use a clearer image or edit entries manually. OCR loads from jsDelivr, so the browser needs internet access. Check imported entries for OCR mistakes.
+In Admin → Timetable, upload the original college timetable PDF or a clear image. The PDF importer reads the grid layout, Friday header, semester rows, course columns, and room codes; it recognizes LR1–LR6, LAB1–LAB5, BDA LAB, and XICA AUDI. It imports the Friday rows as the weekly Friday schedule and replaces the currently saved timetable, so review the result before use. The app's periods match the timetable: 07:45–08:40, 08:45–09:40, 09:45–10:40, 11:15–12:10, 12:15–01:10, 01:15–02:10, 02:45–03:40, 03:45–04:40, 04:45–05:40, and 05:45–06:40. Long breaks between 10:40–11:15 and 02:10–02:45 cannot be crossed by one booking. Image OCR remains available for simple images and loads Tesseract from jsDelivr, so the browser needs internet access. Check imported entries for mistakes.
 
 ## Supabase database
 
@@ -59,6 +59,7 @@ In Admin → Timetable, upload a clear image. Browser OCR automatically imports 
    - `SUPABASE_URL` — project URL
    - `SUPABASE_SERVICE_ROLE_KEY` — paste the Supabase **Secret key** (`sb_secret_…`), not the Publishable key. A legacy `service_role` key also works. Keep it server-side and out of GitHub
    - `LOOPIN_SECRET_KEY` — a long random value for Flask sessions
+   - `ADMIN_PIN` — change the local demo PIN before sharing; set this in Render for the deployed admin PIN
 5. Start locally with `bash run.sh`, or redeploy Render. When both Supabase variables are present, venue, timetable, and booking data use the `spaces_store` table. On first connection, the current local JSON files seed any missing Supabase rows. Here the timetable and bookings are empty so your new database starts fresh; the 14 venue definitions are retained.
 
 Never add the service-role key to JavaScript, paste it into chat, or commit `.env` to the repository. Render's filesystem may reset between deploys, so Supabase is recommended for persistent bookings.
@@ -72,7 +73,7 @@ Create a **Web Service** from the GitHub repository. Use the Python runtime, bui
 - **Hash map:** `dsa/hash_map_store.py` indexes venues, lectures, and request IDs for quick lookups.
 - **Queue:** `dsa/queue_ds.py` is a linked first-in, first-out queue used to order pending requests.
 - **Merge sort:** `dsa/sorting.py` sorts rooms by capacity, timetable slots, and request history.
-- **Sliding window:** `dsa/sliding_window.py` finds consecutive open slots without crossing the lunch break.
+- **Sliding window:** `dsa/sliding_window.py` finds consecutive open periods without crossing long campus breaks.
 - **Greedy best fit:** `dsa/greedy_best_fit.py` chooses the smallest room that fits the requested group.
 - **Trie:** `dsa/trie.py` finds room names by their typed prefix on the booking screen.
 

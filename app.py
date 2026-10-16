@@ -10,6 +10,7 @@ from config import BASE_DIR, DATA_DIR, SLOTS, DAYS, ADMIN_PIN
 from logic.slot_checker import slot_status, check_request, request_slots
 from logic.booking_manager import pending_queue, next_request_id
 from logic.storage import read_json, write_json
+from logic.timetable_pdf import extract_college_timetable
 from dsa.sorting import sort_history, sort_slots, merge_sort
 from dsa.greedy_best_fit import best_fit
 from dsa.sliding_window import find_windows
@@ -246,6 +247,21 @@ def timetable_import():
         return jsonify({"error": "No valid venue, day, time, and class entries were recognized. The current timetable was kept."}), 400
     save_data("timetable", cleaned)
     return jsonify({"ok": True, "count": len(cleaned)})
+
+@app.post("/api/admin/timetable/import-pdf")
+@admin_required
+def timetable_import_pdf():
+    uploaded = request.files.get("file")
+    if not uploaded or not uploaded.filename.lower().endswith(".pdf"):
+        return jsonify({"error": "Choose a timetable PDF file."}), 400
+    try:
+        venue_names = [venue["name"] for venue in load_data("venues")]
+        rows = extract_college_timetable(uploaded.stream, venue_names)
+    except Exception as error:
+        message = str(error) if isinstance(error, ValueError) else "The PDF couldn’t be read. Try exporting the original timetable PDF again."
+        return jsonify({"error": message}), 400
+    save_data("timetable", rows)
+    return jsonify({"ok": True, "count": len(rows), "day": rows[0]["day"]})
 
 @app.route("/api/admin/venues", methods=["POST", "PUT", "DELETE"])
 @admin_required

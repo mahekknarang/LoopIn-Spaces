@@ -3,10 +3,9 @@ const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
 const pageState = { venues: [], slots: [], grid: {}, day: "", date: "", visibleNames: null };
 
 async function api(url, options = {}) {
-  const response = await fetch(url, {
-    headers: { "Content-Type": "application/json", ...(options.headers || {}) },
-    ...options
-  });
+  const headers = { ...(options.headers || {}) };
+  if (!(options.body instanceof FormData)) headers["Content-Type"] ||= "application/json";
+  const response = await fetch(url, { ...options, headers });
   const body = await response.json().catch(() => ({}));
   if (!response.ok) throw new Error(body.error || "That didn’t work. Please try again.");
   return body;
@@ -29,8 +28,8 @@ function openBooking(venue, dateText, firstSlot, suggestedHours = 1) {
   const endIndex = Math.min(startIndex + suggestedHours - 1, pageState.slots.length - 1);
   const options = pageState.slots.slice(startIndex).map((slot, offset) => {
     const index = startIndex + offset;
-    const noLunchJump = index <= startIndex || !(pageState.slots[index - 1] === "12-1" && slot === "2-3");
-    return `<option value="${slot}" ${index === endIndex ? "selected" : ""} ${noLunchJump ? "" : "disabled"}>${slot}</option>`;
+    const separatedByBreak = index > startIndex && ((pageState.slots[index - 1] === "9:45-10:40" && slot === "11:15-12:10") || (pageState.slots[index - 1] === "1:15-2:10" && slot === "2:45-3:40"));
+    return `<option value="${slot}" ${index === endIndex ? "selected" : ""} ${separatedByBreak ? "disabled" : ""}>${slot}</option>`;
   }).join("");
   $("#modal-content").innerHTML = `
     <div class="modal-head"><div><div class="section-kicker">BOOK A SPACE</div><h2>${escapeHtml(venue)}</h2><p>${dateText} · Starts at ${firstSlot}</p></div><button class="close" type="button" data-close aria-label="Close">×</button></div>
@@ -209,7 +208,7 @@ function renderHistory() {
 
 function renderTimetable() {
   const data = window.adminData, host = $("#admin-content"); host.className = "admin-panel";
-  host.innerHTML = `<h2>Weekly timetable</h2><div class="timetable-import"><label for="timetable-image">IMPORT FROM AN IMAGE</label><input id="timetable-image" type="file" accept="image/*"><p id="timetable-import-status">Upload a clear timetable image. Recognized venue, day, time, and class entries will be imported automatically.</p></div><div class="admin-form"><label>VENUE<select id="tt-venue">${data.venues.map(item => `<option>${escapeHtml(item.name)}</option>`).join("")}</select></label><label>DAY<select id="tt-day">${data.days.map(day => `<option>${day}</option>`).join("")}</select></label></div><div id="tt-slots"></div>`;
+  host.innerHTML = `<h2>Weekly timetable</h2><div class="timetable-import"><label for="timetable-image">UPLOAD TIMETABLE</label><input id="timetable-image" type="file" accept="image/*,.pdf,application/pdf"><p id="timetable-import-status">Upload the college timetable PDF or a clear image. The PDF importer reads the college grid and room codes. Importing replaces the saved timetable.</p></div><div class="admin-form"><label>VENUE<select id="tt-venue">${data.venues.map(item => `<option>${escapeHtml(item.name)}</option>`).join("")}</select></label><label>DAY<select id="tt-day">${data.days.map(day => `<option>${day}</option>`).join("")}</select></label></div><div id="tt-slots"></div>`;
   $("#timetable-image").onchange = importTimetableImage;
   function draw() { const venue = $("#tt-venue").value, day = $("#tt-day").value; $("#tt-slots").innerHTML = adminTable(data.slots.map(slot => { const row = data.timetable.find(item => item.venue === venue && item.day === day && item.slot === slot); return `<tr><td>${slot}</td><td>${row ? escapeHtml(row.lecture) : "Open"}</td><td><button class="button secondary mini" data-edit-slot="${slot}">${row ? "Edit" : "Add"}</button>${row ? `<button class="button red mini" data-delete-slot="${slot}">Delete</button>` : ""}</td></tr>`; }).join(""), ["SLOT", "LECTURE", "ACTION"]); $$('[data-edit-slot]').forEach(button => button.onclick = () => editLecture(venue, day, button.dataset.editSlot)); $$('[data-delete-slot]').forEach(button => button.onclick = () => saveLecture(venue, day, button.dataset.deleteSlot, "")); }
   $("#tt-venue").onchange = draw; $("#tt-day").onchange = draw; draw();
@@ -219,7 +218,23 @@ async function importTimetableImage(event) {
   const file = event.currentTarget.files?.[0];
   if (!file) return;
   const status = $("#timetable-import-status");
-  if (!file.type.startsWith("image/")) { status.textContent = "Choose an image file."; return; }
+  const isPdf = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
+  if (isPdf) {
+    status.textContent = "Reading the college timetable PDF…";
+    try {
+      const form = new FormData(); form.append("file", file);
+      const saved = await api("/api/admin/timetable/import-pdf", { method: "POST", body: form });
+      toast(`Imported ${saved.count} Friday room entries.`);
+      await renderAdmin("Timetable");
+    } catch (error) {
+      status.textContent = error.message;
+      status.classList.add("form-error");
+    } finally {
+      event.currentTarget.value = "";
+    }
+    return;
+  }
+  if (!file.type.startsWith("image/")) { status.textContent = "Choose a timetable PDF or image file."; return; }
   status.textContent = "Reading the timetable image…";
   try {
     if (!window.Tesseract) {
