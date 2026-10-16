@@ -44,7 +44,7 @@ The fresh project data contains the 14 venue definitions and an empty timetable 
 
 ## College venues
 
-The venue list is preloaded with LR1–LR6, LAB1–LAB5, BDA LAB, XICA AUDI, and XICA LIBRARY. Sample capacities are estimates; adjust them in the admin page to match your campus.
+The venue list is preloaded with LR1–LR6, LAB1–LAB5, BDA LAB, XICA AUDI, and XICA LIBRARY. LR rooms and all labs are set to 80 seats, XICA AUDI to 200, and XICA LIBRARY remains at 60.
 
 ## Importing a timetable image
 
@@ -71,6 +71,8 @@ In Admin → Timetable, upload the original college timetable PDF or a clear ima
 - `booking_slots`: one row per period requested, linked to its booking and removed automatically when that booking is deleted.
 
 Row Level Security is enabled with no public access policies. The app uses the server-side Supabase key. The existing `spaces_store` backup table is not used by the new app.
+
+To apply the college capacity update to an existing database, run `update_venue_capacities.sql` once in Supabase **SQL Editor**. It updates normalized venue rows and the legacy backup collection, if present.
 
 Never add the service-role key to JavaScript, paste it into chat, or commit `.env` to the repository. Render's filesystem may reset between deploys, so Supabase is recommended for persistent bookings.
 

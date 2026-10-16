@@ -2,67 +2,67 @@
   {
     "name": "LR1",
     "type": "LR",
-    "capacity": 60
+    "capacity": 80
   },
   {
     "name": "LR2",
     "type": "LR",
-    "capacity": 60
+    "capacity": 80
   },
   {
     "name": "LR3",
     "type": "LR",
-    "capacity": 60
+    "capacity": 80
   },
   {
     "name": "LR4",
     "type": "LR",
-    "capacity": 60
+    "capacity": 80
   },
   {
     "name": "LR5",
     "type": "LR",
-    "capacity": 60
+    "capacity": 80
   },
   {
     "name": "LR6",
     "type": "LR",
-    "capacity": 60
+    "capacity": 80
   },
   {
     "name": "LAB1",
     "type": "Lab",
-    "capacity": 30
+    "capacity": 80
   },
   {
     "name": "LAB2",
     "type": "Lab",
-    "capacity": 30
+    "capacity": 80
   },
   {
     "name": "LAB3",
     "type": "Lab",
-    "capacity": 30
+    "capacity": 80
   },
   {
     "name": "LAB4",
     "type": "Lab",
-    "capacity": 30
+    "capacity": 80
   },
   {
     "name": "LAB5",
     "type": "Lab",
-    "capacity": 30
+    "capacity": 80
   },
   {
     "name": "BDA LAB",
     "type": "Lab",
-    "capacity": 30
+    "capacity": 80
   },
   {
     "name": "XICA AUDI",
     "type": "Hall",
-    "capacity": 150
+    "capacity": 200
   },
   {
     "name": "XICA LIBRARY",
