@@ -75,7 +75,7 @@ function drawGrid() {
   const host = $("#venue-grid");
   if (!host) return;
   const shownVenues = pageState.visibleNames ? pageState.venues.filter(venue => pageState.visibleNames.has(venue.name)) : pageState.venues;
-  const desktop = [`<div class="availability-grid desktop-grid"><div class="grid-head venue-head">VENUE</div>${pageState.slots.map(slot => `<div class="grid-head">${slot}</div>`).join("")}`];
+  const desktop = [`<div class="availability-grid desktop-grid" style="--slot-count:${pageState.slots.length}"><div class="grid-head venue-head">VENUE</div>${pageState.slots.map(slot => `<div class="grid-head">${slot}</div>`).join("")}`];
   const mobile = ['<div class="mobile-venues">'];
   shownVenues.forEach(venue => {
     desktop.push(`<div class="venue-label">${escapeHtml(venue.name)}<small>${venue.capacity} seats</small></div>`);
