@@ -23,7 +23,9 @@ def _load_local_env():
 
 _load_local_env()
 
-ADMIN_PIN = os.environ.get("ADMIN_PIN", "1234")  # Override for deployed environments.
+ADMIN_USERNAME = os.environ.get("ADMIN_USERNAME", "admin")
+# ADMIN_PIN remains a compatibility fallback for existing local/Render setups.
+ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", os.environ.get("ADMIN_PIN", "1234"))
 SLOTS = ["7:45-8:40", "8:45-9:40", "9:45-10:40", "11:15-12:10", "12:15-1:10", "1:15-2:10", "2:45-3:40", "3:45-4:40", "4:45-5:40", "5:45-6:40"]
 # The timetable has two long breaks between periods; bookings cannot span either one.
 SLOT_BREAKS = [(SLOTS[2], SLOTS[3]), (SLOTS[5], SLOTS[6])]

@@ -38,7 +38,7 @@ Open the URL printed in the terminal. If port 5000 is occupied, the app uses 500
 
 ## Admin and data
 
-The local demo admin PIN is **1234**. For a deployed service, set a private `ADMIN_PIN` environment variable in Render. Five incorrect attempts block that browser session for one minute.
+The admin page requires a username and password each time it is opened. Use `ADMIN_USERNAME` and `ADMIN_PASSWORD` from `.env` locally and set both in Render before sharing. The `.env.example` values are only placeholders. Five incorrect attempts block that browser session for one minute. Existing `ADMIN_PIN` settings remain accepted as the password fallback; username is `admin` unless configured.
 
 The fresh project data contains the 14 venue definitions and an empty timetable and booking list. Venue rows contain a name, type, and capacity. Timetable rows contain venue, weekday, slot, and lecture. Booking rows contain a request ID, contact details, date, slots, status, and optional decision reason.
 
@@ -59,7 +59,8 @@ In Admin → Timetable, upload the original college timetable PDF or a clear ima
    - `SUPABASE_URL` — project URL
    - `SUPABASE_SERVICE_ROLE_KEY` — paste the Supabase **Secret key** (`sb_secret_…`), not the Publishable key. A legacy `service_role` key also works. Keep it server-side and out of GitHub
    - `LOOPIN_SECRET_KEY` — a long random value for Flask sessions
-   - `ADMIN_PIN` — change the local demo PIN before sharing; set this in Render for the deployed admin PIN
+   - `ADMIN_USERNAME` — admin sign-in username (defaults to `admin`)
+   - `ADMIN_PASSWORD` — admin sign-in password; choose a private value in Render and `.env`
 5. After the SQL completes, start locally with `bash run.sh`, or redeploy Render. The app reads and writes separate `venues`, `timetable`, `bookings`, and `booking_slots` tables. The SQL copies any existing `spaces_store` data into those tables and leaves the old table in place as a backup. Once connected, an empty Supabase table remains empty; local demo JSON files are never copied over your database.
 
 ### What is stored
@@ -97,7 +98,7 @@ python -m unittest discover -s tests -v
 - **Python not found:** install Python 3.9 or newer from python.org. On Mac, use `python3`; on Windows, try `py -3`.
 - **pip install fails:** activate `.venv`, check that your internet connection is available, then run `python -m pip install -r requirements.txt` again.
 - **Page shows an error:** keep the terminal open while the app runs, use the exact printed URL, and use the Retry button on the booking page.
-- **Admin PIN not working:** the default is `1234`; check `ADMIN_PIN` in `config.py`. Five wrong attempts block the session for one minute.
+- **Admin login not working:** check `ADMIN_USERNAME` and `ADMIN_PASSWORD` in `.env` or Render. Existing `ADMIN_PIN` values work as the password only when `ADMIN_PASSWORD` is not set. Five wrong attempts block the session for one minute.
 
 ## Future improvements
 

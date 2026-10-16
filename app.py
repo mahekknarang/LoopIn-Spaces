@@ -1,12 +1,13 @@
 """LoopIn: Spaces — a JSON-backed college venue planner."""
 import json
+import hmac
 import os
 import socket
 import time
 from datetime import date, datetime, timedelta
 from functools import wraps
 from flask import Flask, jsonify, render_template, request, session
-from config import BASE_DIR, DATA_DIR, SLOTS, DAYS, ADMIN_PIN
+from config import BASE_DIR, DATA_DIR, SLOTS, DAYS, ADMIN_USERNAME, ADMIN_PASSWORD
 from logic.slot_checker import slot_status, check_request, request_slots
 from logic.booking_manager import pending_queue, next_request_id
 from logic.storage import read_json, write_json
@@ -56,6 +57,8 @@ def status_page():
 
 @app.get("/admin")
 def admin_page():
+    # Ask for credentials on each visit, even if this browser had an older session.
+    session.pop("admin", None)
     return render_template("admin.html")
 
 @app.get("/how-it-works")
@@ -144,12 +147,16 @@ def find_venue():
 
 @app.post("/api/admin/login")
 def admin_login():
-    pin = str((request.get_json(silent=True) or {}).get("pin", ""))
+    payload = request.get_json(silent=True) or {}
+    username = str(payload.get("username", ""))
+    password = str(payload.get("password", ""))
     now = time.time()
     blocked_until = session.get("pin_blocked_until", 0)
     if now < blocked_until:
         return jsonify({"error": "Too many attempts. Try again in one minute."}), 429
-    if pin == ADMIN_PIN:
+    username_matches = hmac.compare_digest(username.encode("utf-8"), ADMIN_USERNAME.encode("utf-8"))
+    password_matches = hmac.compare_digest(password.encode("utf-8"), ADMIN_PASSWORD.encode("utf-8"))
+    if username_matches and password_matches:
         session["admin"] = True
         session.pop("pin_failures", None)
         session.pop("pin_blocked_until", None)
@@ -160,7 +167,7 @@ def admin_login():
         session["pin_failures"] = 0
         session["pin_blocked_until"] = now + 60
         return jsonify({"error": "Too many attempts. Try again in one minute."}), 429
-    return jsonify({"error": "That PIN didn’t match."}), 401
+    return jsonify({"error": "Username or password didn’t match."}), 401
 
 @app.post("/api/admin/logout")
 @admin_required

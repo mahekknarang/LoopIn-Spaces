@@ -45,6 +45,17 @@ function openBooking(venue, dateText, firstSlot, suggestedHours = 1) {
   $("#booking-form").onsubmit = submitBooking;
 }
 
+function openClassDetails(venue, dateText, slot, lecture) {
+  const date = new Date(`${dateText}T12:00:00`);
+  const readableDate = Number.isNaN(date.valueOf()) ? dateText : new Intl.DateTimeFormat(undefined, { weekday: "long", day: "numeric", month: "long", year: "numeric" }).format(date);
+  $("#modal-content").innerHTML = `
+    <div class="modal-head"><div><div class="section-kicker">SCHEDULED CLASS</div><h2>${escapeHtml(venue)}</h2><p>This room is occupied during this period.</p></div><button class="close" type="button" data-close aria-label="Close">×</button></div>
+    <dl class="class-details"><div><dt>Class / timetable entry</dt><dd>${escapeHtml(lecture)}</dd></div><div><dt>Date</dt><dd>${escapeHtml(readableDate)}</dd></div><div><dt>Time</dt><dd>${escapeHtml(slot)}</dd></div><div><dt>Venue</dt><dd>${escapeHtml(venue)}</dd></div></dl>
+    <div class="form-actions"><button class="button primary" type="button" data-close>Done</button></div>`;
+  $("#modal").classList.remove("hidden");
+  $$('[data-close]').forEach(button => button.onclick = closeModal);
+}
+
 function closeModal() { $("#modal")?.classList.add("hidden"); }
 
 async function submitBooking(event) {
@@ -84,7 +95,10 @@ function drawGrid() {
       const item = pageState.grid[venue.name]?.[slot] || { state: "free", label: "Open" };
       const label = item.state === "lecture" ? item.label : item.state === "approved" ? "Booked" : item.state === "pending" ? "Pending" : "Open";
       const open = ["free", "pending"].includes(item.state);
-      const attributes = open ? `data-venue="${escapeHtml(venue.name)}" data-slot="${slot}"` : `disabled title="${escapeHtml(label)}"`;
+      const attributes = item.state === "lecture"
+        ? `data-lecture="true" data-venue="${escapeHtml(venue.name)}" data-label="${escapeHtml(item.label)}" data-slot="${escapeHtml(slot)}" aria-label="View ${escapeHtml(item.label)} at ${escapeHtml(venue.name)}, ${escapeHtml(slot)}"`
+        : open ? `data-venue="${escapeHtml(venue.name)}" data-slot="${escapeHtml(slot)}"`
+          : `disabled title="${escapeHtml(label)}"`;
       const button = `<button class="slot-pill ${item.state}" ${attributes}>${escapeHtml(label)}</button>`;
       desktop.push(`<div class="slot-cell">${button}</div>`);
       chips.push(button);
@@ -94,6 +108,7 @@ function drawGrid() {
   desktop.push("</div>"); mobile.push("</div>");
   host.innerHTML = desktop.join("") + mobile.join("");
   $$(".slot-pill[data-slot]", host).forEach(button => button.onclick = () => openBooking(button.dataset.venue, pageState.date, button.dataset.slot));
+  $$(".slot-pill[data-lecture]", host).forEach(button => button.onclick = () => openClassDetails(button.dataset.venue, pageState.date, button.dataset.slot, button.dataset.label));
 }
 
 async function searchVenues(prefix) {
@@ -147,13 +162,13 @@ async function checkRequest(event) {
 async function loginAdmin() {
   const errorBox = $("#pin-error");
   try {
-    await api("/api/admin/login", { method: "POST", body: JSON.stringify({ pin: $("#pin-value").value }) });
+    await api("/api/admin/login", { method: "POST", body: JSON.stringify({ username: $("#admin-username").value.trim(), password: $("#admin-password").value }) });
     $("#admin-login").classList.add("hidden");
     await renderAdmin();
   } catch (error) {
     errorBox.textContent = error.message;
     $("#admin-login").classList.remove("shake"); void $("#admin-login").offsetWidth; $("#admin-login").classList.add("shake");
-    $("#pin-value").value = "";
+    $("#admin-password").value = "";
   }
 }
 
@@ -327,8 +342,6 @@ if ($("#grid-date")) {
 }
 if ($("#check-form")) $("#check-form").onsubmit = checkRequest;
 if ($("#pin-submit")) {
-  $("#pin-submit").onclick = loginAdmin;
-  $("#pin-value").onkeydown = event => { if (event.key === "Enter") loginAdmin(); };
-  api("/api/admin/data").then(() => { $("#admin-login").classList.add("hidden"); renderAdmin(); }).catch(() => {});
+  $("#admin-login-form").onsubmit = event => { event.preventDefault(); loginAdmin(); };
 }
 if ($("#modal")) $("#modal").onclick = event => { if (event.target.id === "modal") closeModal(); };
