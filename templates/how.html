@@ -1,3 +1,104 @@
 {% extends "base.html" %}
 {% block title %}How it works · LoopIn Spaces{% endblock %}
-{% block content %}<main class="how-page"><a class="back-link" href="/">Back to Spaces</a><div class="hero-label">A QUICK GUIDE</div><h1>How it<br><span>works.</span></h1><p class="how-intro">Three steps to a room, with a little DSA working behind the scenes.</p><section class="how-steps"><article><span class="step-no">01</span><div><h2>See which rooms are free</h2><p>Choose a date and scan the room schedule. Green is open, red is a class, yellow is a pending request, and purple is an approved booking.</p></div></article><article><span class="step-no">02</span><div><h2>Send a request</h2><p>Select an open time, add your details, and keep the Request ID we give you. Pending requests don’t reserve a room.</p></div></article><article><span class="step-no">03</span><div><h2>Get the decision</h2><p>An admin reviews requests in order. After approval, check the result any time with your Request ID.</p></div></article></section><section class="how-dsa"><div class="section-kicker">BEHIND THE SCENES</div><h2>DSA makes it fast and fair.</h2><div class="dsa-list"><article><b>Hash map · quick lookup</b><p>Indexes venues, lectures, and bookings by their keys.<br>Used to check availability in the room grid.</p></article><article><b>Queue · first come, first served</b><p>A hand-built linked queue keeps pending requests in arrival order.<br>Admins review the oldest request first.</p></article><article><b>Merge sort · clear ordering</b><p>Our own merge sort orders venues, time slots, and history.<br>Search puts smaller suitable rooms first.</p></article><article><b>Sliding window · consecutive time</b><p>Moves across free slots to find a continuous block.<br>The missing lunch slot breaks a window automatically.</p></article><article><b>Greedy best fit · save larger rooms</b><p>Chooses the smallest room that fits the group and hours.<br>That keeps larger rooms open for larger events.</p></article><article><b>Trie · room name search</b><p>A prefix tree matches a room’s first letters as you type.<br>Used by the search box on the booking screen.</p></article></div></section></main>{% endblock %}
+{% block content %}
+<main class="how-page">
+  <a class="back-link" href="/">Back to Spaces</a>
+  <div class="hero-label">PROJECT WALKTHROUGH</div>
+  <h1>How it<br><span>works.</span></h1>
+  <p class="how-intro">A plain-language guide to LoopIn: Spaces: what students see, what the admin does, and what the code is doing behind each feature.</p>
+
+  <section class="guide-section">
+    <div class="section-kicker">01 · THE STUDENT JOURNEY</div>
+    <h2>From finding a room to checking a decision</h2>
+    <div class="guide-steps">
+      <article><span class="step-no">01</span><div><h3>Choose a date and inspect the schedule</h3><p>The booking page loads the rooms, the college timetable, and existing requests for the selected date. Green means open, red means a scheduled class, yellow means a request is waiting for review, purple means an admin approved a booking, and grey means special permission is needed.</p></div></article>
+      <article><span class="step-no">02</span><div><h3>Pick an open period and send your request</h3><p>Choose a green period, choose the last period you need, and enter your name, contact, event name, and purpose. The server checks every required field, the date, the room, the timetable, approved bookings, and long breaks before saving anything.</p></div></article>
+      <article><span class="step-no">03</span><div><h3>Save the request ID</h3><p>A successful request gets an ID such as BK-1024. The ID is created by looking for the largest existing number and adding one. Keep the ID: the public status page uses it to find your request without showing other students’ personal details.</p></div></article>
+      <article><span class="step-no">04</span><div><h3>Wait for the admin decision</h3><p>A request starts as Pending. Pending requests appear yellow, but they do not reserve a room. An admin reviews the queue and either approves it or rejects it with a reason. If another request for the same time was approved first, the conflicting pending request is rejected.</p></div></article>
+    </div>
+  </section>
+
+  <section class="guide-section">
+    <div class="section-kicker">02 · BOOKING RULES</div>
+    <h2>How the app decides whether a slot is available</h2>
+    <div class="guide-cards">
+      <article><h3>Classes and confirmed bookings block a slot</h3><p>The availability check looks for a class in that room and weekday. It also looks for an approved booking on the exact date. If either one exists, the app refuses the request.</p></article>
+      <article><h3>Pending requests are visible, but do not lock a room</h3><p>More than one student may request the same pending slot. The admin’s approval is the point where the app checks again and gives the slot to one request. Other overlapping pending requests are then rejected.</p></article>
+      <article><h3>Click a class to see its details</h3><p>A red timetable cell opens a pop-up with the class label, room, date, and period. A restricted library cell opens a permission notice. Green open periods open the booking form.</p></article>
+      <article><h3>A request cannot jump across a long break</h3><p>The college has long breaks between some periods. Even if the periods before and after a break are both free, the app treats them as separate blocks. One booking cannot include both sides of a break.</p></article>
+      <article><h3>Search rooms by their starting letters</h3><p>The search box filters the venue list as you type. For example, typing “LAB” shows the lab venues. The date picker reloads the timetable and bookings for the date you selected.</p></article>
+      <article><h3>XICA Library needs permission</h3><p>The library stays unavailable to students unless an admin enables bookings after special permission is received. The app shows a clear notice when someone clicks its unavailable slot.</p></article>
+    </div>
+  </section>
+
+  <section class="guide-section">
+    <div class="section-kicker">03 · FIND A ROOM FOR ME</div>
+    <h2>How the best-fit finder works</h2>
+    <p>Enter a date, group size, and number of periods. The app removes rooms that are too small, restricted, or occupied. It then looks for runs of consecutive free periods long enough for the event. Results are sorted from smaller capacity to larger capacity, so the smallest room that fits is highlighted first. This helps keep the auditorium and larger rooms available for bigger groups.</p>
+  </section>
+
+  <section class="guide-section">
+    <div class="section-kicker">04 · THE ADMIN AREA</div>
+    <h2>What each admin section is for</h2>
+    <div class="guide-cards">
+      <article><h3>Requests</h3><p>Shows pending requests in the order they arrived. The admin can approve or reject each one. Before approval, the server checks for a class or an already-approved booking again, so a stale screen cannot quietly create a clash.</p></article>
+      <article><h3>Timetable</h3><p>Shows the selected room and weekday. Admins can add, edit, or remove a class in one period, or import a timetable file. Importing replaces the saved timetable, so the admin should inspect the imported rows afterwards.</p></article>
+      <article><h3>Venues</h3><p>Stores each room’s name, type, capacity, and whether students can book it. Admins can add or edit rooms. A room with booking history cannot be deleted, because old requests need to remain linked to their venue.</p></article>
+      <article><h3>History</h3><p>Shows decided requests, newest first, including whether each was approved or rejected and the reason. This gives the admin a simple record of past decisions.</p></article>
+    </div>
+  </section>
+
+  <section class="guide-section">
+    <div class="section-kicker">05 · TIMETABLE IMPORT AND OCR</div>
+    <h2>How a timetable file becomes room entries</h2>
+    <p><b>OCR</b> means <b>Optical Character Recognition</b>: software looks at pixels in an image and tries to turn visible letters and numbers into text. LoopIn supports two different import paths:</p>
+    <div class="guide-cards">
+      <article><h3>Digital PDF: read its text and page positions</h3><p>For the college’s digital timetable PDF, the Python library <b>pdfplumber</b> reads text words and where they sit on the first page. The importer uses the weekday heading, period times, semester labels, and column positions to work out which class belongs to which room and period. It is tailored to this college timetable layout; because it reads the PDF’s text layer and layout, this path is not OCR.</p></article>
+      <article><h3>Image: recognize letters with OCR</h3><p>For an image, the browser loads <b>Tesseract.js</b>, a JavaScript OCR tool. It recognizes text, then LoopIn tries to match each text line to a known room, weekday, time period, and class. Blurry images, unusual layouts, or text split across lines can lead to mistakes, so always review the imported timetable.</p></article>
+    </div>
+    <p class="guide-note"><b>In short:</b> OCR is the image-reading method. The PDF path reads selectable text from this college timetable’s known grid layout. A scanned PDF without a text layer may not work with the PDF path. Both paths save timetable rows; neither one can guarantee a perfect result from every file.</p>
+  </section>
+
+  <section class="guide-section">
+    <div class="section-kicker">06 · DATA AND ADMIN LOGIN</div>
+    <h2>Where the information lives</h2>
+    <p>When Supabase is configured, Flask sends database requests from the server using the private Supabase key. The browser never receives that key. Without Supabase settings, the project falls back to JSON files in its local <code>data</code> folder; those files are useful for a local demo but may not persist on a hosted service after a restart.</p>
+    <div class="guide-cards">
+      <article><h3><code>venues</code></h3><p>One row for each space: its name, type, capacity, and student-booking permission.</p></article>
+      <article><h3><code>timetable</code></h3><p>One row for each occupied room, weekday, time period, and class name.</p></article>
+      <article><h3><code>bookings</code></h3><p>One row for each request: ID, requester and contact, event, purpose, venue, date, status, and decision details.</p></article>
+      <article><h3><code>booking_slots</code></h3><p>One row per period in a booking, connected to the booking ID. This makes the periods easy to query and keeps related data linked.</p></article>
+    </div>
+    <p>The admin username and password come from server environment variables. A successful login creates a Flask session. Five wrong attempts from the same session trigger a one-minute wait. Supabase Row Level Security (RLS) blocks public table access; the app’s server uses its private key to read and write data.</p>
+  </section>
+
+  <section class="guide-section">
+    <div class="section-kicker">07 · DATA STRUCTURES AND ALGORITHMS</div>
+    <h2>Where the DSA appears in the code</h2>
+    <p><b>DSA</b> stands for <b>Data Structures and Algorithms</b>. These are the ways a program stores information and the steps it uses to find or organize that information.</p>
+    <div class="guide-cards">
+      <article><h3>Hash map · look up by key</h3><p>A hash map stores a value under a key, like a room name or request ID. LoopIn builds Python dictionaries to find the room, class, or request directly instead of scanning every record each time.</p></article>
+      <article><h3>Queue · first in, first out</h3><p>A queue is a line: the first item added is the first item handled. LoopIn orders pending requests by creation time and places them in a linked queue for admin review. FIFO means First In, First Out.</p></article>
+      <article><h3>Merge sort · organize lists</h3><p>Merge sort splits a list into smaller parts, sorts those parts, and merges them back in order. LoopIn uses its own merge-sort implementation for slot order, request history, and room capacities.</p></article>
+      <article><h3>Sliding window · find a continuous block</h3><p>A sliding window checks a moving run of periods. It finds every block long enough for the event, resets when it meets a busy period, and also resets at the college’s long breaks.</p></article>
+      <article><h3>Greedy best fit · use the smallest suitable room</h3><p>A greedy choice makes the best immediate fit: among the available rooms, choose the smallest one with enough seats. It is a simple way to avoid suggesting a large room when a smaller one works.</p></article>
+      <article><h3>Trie · search by the first letters</h3><p>A trie is a tree of letters. The venue search follows the letters typed so far and returns room names that start with that prefix, such as “LAB”.</p></article>
+    </div>
+  </section>
+
+  <section class="guide-section tools-section">
+    <div class="section-kicker">08 · TOOLS USED</div>
+    <h2>The project stack, in simple terms</h2>
+    <div class="tool-list">
+      <p><b>Python + Flask:</b> runs the server, validates requests, applies booking rules, and serves the pages and API routes.</p>
+      <p><b>HTML, CSS, and JavaScript:</b> build the pages, visual design, responsive layout, booking grid, forms, and browser interactions.</p>
+      <p><b>Supabase + PostgreSQL:</b> holds organized, persistent tables for venues, timetable entries, bookings, and their time periods. Flask talks to it through the Supabase REST API.</p>
+      <p><b>pdfplumber:</b> reads the digital PDF timetable’s text and positions.</p>
+      <p><b>Tesseract.js:</b> recognizes text in an uploaded timetable image using OCR.</p>
+      <p><b>GitHub:</b> stores the project source code and its change history.</p>
+      <p><b>Render:</b> runs the deployed Flask web app on the internet.</p>
+    </div>
+    <p class="guide-note">A good mini-project explanation: “A student checks an available room and submits a request. Flask validates it, uses the timetable and booking data to prevent clashes, and saves the request. The admin reviews a first-come queue. Data Structures and Algorithms help search, sort, and find suitable room/time combinations.”</p>
+  </section>
+</main>
+{% endblock %}
