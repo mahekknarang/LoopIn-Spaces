@@ -33,8 +33,8 @@ def _supabase_request(path, method="GET", payload=None):
 
 def _read_supabase(name):
     if name == "venues":
-        rows = _supabase_request("venues?select=name,type,capacity&order=name")
-        return [{"name": row["name"], "type": row["type"], "capacity": row["capacity"]} for row in rows]
+        rows = _supabase_request("venues?select=name,type,capacity,bookable&order=name")
+        return [{"name": row["name"], "type": row["type"], "capacity": row["capacity"], "bookable": row["bookable"]} for row in rows]
     if name == "timetable":
         rows = _supabase_request("timetable?select=venue_name,day,slot,lecture&order=venue_name,day,slot")
         return [{"venue": row["venue_name"], "day": row["day"], "slot": row["slot"], "lecture": row["lecture"]} for row in rows]

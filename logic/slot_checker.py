@@ -29,6 +29,9 @@ def check_request(payload, venues, timetable, bookings):
     venue_index = HashMapStore(venues=venues).venues
     if payload["venue"] not in venue_index:
         return "Choose a venue from the list."
+    venue = venue_index[payload["venue"]]
+    if not venue.get("bookable", venue["name"].upper() != "XICA LIBRARY"):
+        return "XICA Library requires special permission before it can be booked. Please choose another venue or contact an administrator."
     if payload["start"] not in SLOTS or payload["end"] not in SLOTS:
         return "Choose valid start and end times."
     start, end = SLOTS.index(payload["start"]), SLOTS.index(payload["end"])

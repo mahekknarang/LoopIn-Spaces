@@ -11,8 +11,10 @@ alter table public.spaces_store enable row level security;
 create table if not exists public.venues (
   name text primary key,
   type text not null,
-  capacity integer not null check (capacity > 0)
+  capacity integer not null check (capacity > 0),
+  bookable boolean not null default true
 );
+alter table public.venues add column if not exists bookable boolean not null default true;
 
 create table if not exists public.timetable (
   venue_name text not null references public.venues(name) on update cascade on delete cascade,
@@ -60,10 +62,10 @@ begin
   if not exists (select 1 from public.venues) then
   select data into stored from public.spaces_store where name = 'venues';
   if jsonb_typeof(stored) = 'array' then
-    insert into public.venues (name, type, capacity)
-    select x.name, x.type, x.capacity
-    from jsonb_to_recordset(stored) as x(name text, type text, capacity integer)
-    on conflict (name) do update set type = excluded.type, capacity = excluded.capacity;
+    insert into public.venues (name, type, capacity, bookable)
+    select x.name, x.type, x.capacity, coalesce(x.bookable, x.name <> 'XICA LIBRARY')
+    from jsonb_to_recordset(stored) as x(name text, type text, capacity integer, bookable boolean)
+    on conflict (name) do update set type = excluded.type, capacity = excluded.capacity, bookable = excluded.bookable;
   end if;
 
   select data into stored from public.spaces_store where name = 'timetable';
@@ -108,10 +110,10 @@ end $$;
 create or replace function public.loopin_save_venues(p_data jsonb)
 returns void language plpgsql security invoker set search_path = public as $$
 begin
-  insert into public.venues(name, type, capacity)
-  select x.name, x.type, x.capacity
-  from jsonb_to_recordset(p_data) as x(name text, type text, capacity integer)
-  on conflict (name) do update set type = excluded.type, capacity = excluded.capacity;
+  insert into public.venues(name, type, capacity, bookable)
+  select x.name, x.type, x.capacity, coalesce(x.bookable, x.name <> 'XICA LIBRARY')
+  from jsonb_to_recordset(p_data) as x(name text, type text, capacity integer, bookable boolean)
+  on conflict (name) do update set type = excluded.type, capacity = excluded.capacity, bookable = excluded.bookable;
   delete from public.venues v
   where not exists (select 1 from jsonb_array_elements(p_data) x where x->>'name' = v.name);
 end $$;

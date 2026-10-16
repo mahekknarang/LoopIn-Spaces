@@ -40,11 +40,11 @@ Open the URL printed in the terminal. If port 5000 is occupied, the app uses 500
 
 The admin page requires a username and password each time it is opened. Use `ADMIN_USERNAME` and `ADMIN_PASSWORD` from `.env` locally and set both in Render before sharing. The `.env.example` values are only placeholders. Five incorrect attempts block that browser session for one minute. Existing `ADMIN_PIN` settings remain accepted as the password fallback; username is `admin` unless configured.
 
-The fresh project data contains the 14 venue definitions and an empty timetable and booking list. Venue rows contain a name, type, and capacity. Timetable rows contain venue, weekday, slot, and lecture. Booking rows contain a request ID, contact details, date, slots, status, and optional decision reason.
+The fresh project data contains the 14 venue definitions and an empty timetable and booking list. Venue rows contain a name, type, capacity, and whether students may book the space. Timetable rows contain venue, weekday, slot, and lecture. Booking rows contain a request ID, contact details, date, slots, status, and optional decision reason.
 
 ## College venues
 
-The venue list is preloaded with LR1–LR6, LAB1–LAB5, BDA LAB, XICA AUDI, and XICA LIBRARY. LR rooms and all labs are set to 80 seats, XICA AUDI to 200, and XICA LIBRARY remains at 60.
+The venue list is preloaded with LR1–LR6, LAB1–LAB5, BDA LAB, XICA AUDI, and XICA LIBRARY. LR rooms and all labs are set to 80 seats, XICA AUDI to 200, and XICA LIBRARY remains at 60. XICA Library is disabled for student bookings until an administrator confirms special permission in Admin → Venues.
 
 ## Importing a timetable image
 
@@ -65,7 +65,7 @@ In Admin → Timetable, upload the original college timetable PDF or a clear ima
 
 ### What is stored
 
-- `venues`: one row per space, with its type and capacity.
+- `venues`: one row per space, with its type, capacity, and student-booking permission.
 - `timetable`: one row per room, weekday, and period, with the class occupying it.
 - `bookings`: one row per request, including requester/contact, purpose, room, date, status, and decision reason.
 - `booking_slots`: one row per period requested, linked to its booking and removed automatically when that booking is deleted.
@@ -73,6 +73,8 @@ In Admin → Timetable, upload the original college timetable PDF or a clear ima
 Row Level Security is enabled with no public access policies. The app uses the server-side Supabase key. The existing `spaces_store` backup table is not used by the new app.
 
 To apply the college capacity update to an existing database, run `update_venue_capacities.sql` once in Supabase **SQL Editor**. It updates normalized venue rows and the legacy backup collection, if present.
+
+For an existing Supabase setup, run `update_library_permission.sql` once in Supabase **SQL Editor** before deploying this app version. It adds the permission flag, disables XICA Library for student bookings, and updates the venue save function. The full `supabase_schema.sql` includes this field for new setups.
 
 Never add the service-role key to JavaScript, paste it into chat, or commit `.env` to the repository. Render's filesystem may reset between deploys, so Supabase is recommended for persistent bookings.
 

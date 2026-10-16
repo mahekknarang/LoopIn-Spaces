@@ -33,6 +33,15 @@ def rebuild_pending_queue():
     global PENDING_QUEUE
     PENDING_QUEUE = pending_queue(load_data("bookings"))
 
+def venue_is_bookable(venue):
+    """Older venue records default to bookable, except the restricted library."""
+    return venue.get("bookable", venue["name"].upper() != "XICA LIBRARY")
+
+def venue_day_grid(venue, day, date_text, timetable, bookings):
+    if not venue_is_bookable(venue):
+        return {slot: {"state": "restricted", "label": "Special permission required"} for slot in SLOTS}
+    return {slot: slot_status(venue["name"], day, date_text, slot, timetable, bookings) for slot in SLOTS}
+
 rebuild_pending_queue()
 
 def admin_required(fn):
@@ -70,7 +79,7 @@ def bootstrap():
     venues, timetable, bookings = load_data("venues"), load_data("timetable"), load_data("bookings")
     today = date.today().isoformat()
     day = date.today().strftime("%A")
-    grid = {v["name"]: {s: slot_status(v["name"], day, today, s, timetable, bookings) for s in SLOTS} for v in venues}
+    grid = {v["name"]: venue_day_grid(v, day, today, timetable, bookings) for v in venues}
     pending = [b for b in bookings if b["status"] == "Pending"]
     return jsonify({"venues": venues, "timetable": timetable, "slots": sort_slots(SLOTS, SLOTS), "days": DAYS,
                     "today": today, "today_day": day, "today_grid": grid,
@@ -84,7 +93,7 @@ def grid():
     except ValueError:
         return jsonify({"error": "Choose a valid date."}), 400
     venues, timetable, bookings = load_data("venues"), load_data("timetable"), load_data("bookings")
-    result = {v["name"]: {s: slot_status(v["name"], day, date_text, s, timetable, bookings) for s in SLOTS} for v in venues}
+    result = {v["name"]: venue_day_grid(v, day, date_text, timetable, bookings) for v in venues}
     return jsonify({"grid": result, "venues": venues, "slots": sort_slots(SLOTS, SLOTS), "day": day})
 
 @app.get("/api/venues/search")
@@ -135,7 +144,7 @@ def find_venue():
     venues, timetable, bookings = load_data("venues"), load_data("timetable"), load_data("bookings")
     day, results = target.strftime("%A"), []
     for venue in venues:
-        if venue["capacity"] < people:
+        if not venue_is_bookable(venue) or venue["capacity"] < people:
             continue
         free = [s for s in SLOTS if slot_status(venue["name"], day, payload["date"], s, timetable, bookings)["state"] in ("free", "pending")]
         for window in find_windows(free, SLOTS, hours):
@@ -299,11 +308,14 @@ def venues_edit():
             return jsonify({"error": "Venue not found."}), 404
         if new_name.lower() != name.lower() and any(v["name"].lower() == new_name.lower() for v in venues):
             return jsonify({"error": "A venue with that name already exists."}), 400
+        raw_bookable = payload.get("bookable", venue_is_bookable(target))
+        if not isinstance(raw_bookable, bool):
+            return jsonify({"error": "Choose whether students can book this venue."}), 400
         if new_name != name:
             # Keep both names available while child rows move; the database
             # enforces venue references for timetable and booking records.
             old_venue = dict(target)
-            target.update(name=new_name, type=kind, capacity=capacity)
+            target.update(name=new_name, type=kind, capacity=capacity, bookable=raw_bookable)
             save_data("venues", venues + [old_venue])
             timetable = load_data("timetable")
             for row in timetable:
@@ -317,11 +329,15 @@ def venues_edit():
             save_data("bookings", bookings)
             rebuild_pending_queue()
         else:
-            target.update(name=new_name, type=kind, capacity=capacity)
+            target.update(name=new_name, type=kind, capacity=capacity, bookable=raw_bookable)
     else:
         if any(v["name"].lower() == new_name.lower() for v in venues):
             return jsonify({"error": "A venue with that name already exists."}), 400
-        venues.append({"name": new_name, "type": kind, "capacity": capacity})
+        default_bookable = new_name.upper() != "XICA LIBRARY"
+        bookable = payload.get("bookable", default_bookable)
+        if not isinstance(bookable, bool):
+            return jsonify({"error": "Choose whether students can book this venue."}), 400
+        venues.append({"name": new_name, "type": kind, "capacity": capacity, "bookable": bookable})
     save_data("venues", venues)
     return jsonify({"ok": True})
 

@@ -65,6 +65,16 @@ class ClashCheckerTests(unittest.TestCase):
         self.payload.update(start="1:15-2:10", end="2:45-3:40")
         self.assertIn("break", check_request(self.payload, self.venues, [], []))
 
+    def test_library_booking_needs_special_permission(self):
+        self.venues = [{"name":"XICA LIBRARY", "capacity":60, "bookable":False}]
+        self.payload["venue"] = "XICA LIBRARY"
+        self.assertIn("special permission", check_request(self.payload, self.venues, [], []))
+
+    def test_admin_enabled_library_can_be_requested(self):
+        self.venues = [{"name":"XICA LIBRARY", "capacity":60, "bookable":True}]
+        self.payload["venue"] = "XICA LIBRARY"
+        self.assertIsNone(check_request(self.payload, self.venues, [], []))
+
 class ApprovalTests(unittest.TestCase):
     def test_approval_rejects_other_pending_clash(self):
         date_text = "2099-10-19"
@@ -84,6 +94,39 @@ class ApprovalTests(unittest.TestCase):
         self.assertEqual(data["bookings"][0]["status"], "Approved")
         self.assertEqual(data["bookings"][1]["status"], "Rejected")
         self.assertEqual(data["bookings"][1]["reason"], "Slot already taken")
+
+class VenuePermissionRouteTests(unittest.TestCase):
+    def setUp(self):
+        self.data = {
+            "venues": [{"name":"XICA LIBRARY", "type":"Library", "capacity":60, "bookable":False}],
+            "timetable": [],
+            "bookings": [],
+        }
+        self.client = spaces_app.app.test_client()
+
+    def test_grid_marks_library_as_restricted(self):
+        with patch.object(spaces_app, "load_data", side_effect=lambda name: self.data[name]):
+            response = self.client.get("/api/grid?date=2099-10-19")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json["grid"]["XICA LIBRARY"][SLOTS[0]]["state"], "restricted")
+
+    def test_public_booking_is_rejected_without_permission(self):
+        payload = {"name":"A", "contact":"a@college.edu", "event":"Study", "purpose":"Study group",
+                   "venue":"XICA LIBRARY", "date":"2099-10-19", "start":SLOTS[0], "end":SLOTS[0]}
+        with patch.object(spaces_app, "load_data", side_effect=lambda name: self.data[name]):
+            response = self.client.post("/api/requests", json=payload)
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("special permission", response.json["error"])
+
+    def test_admin_can_enable_library_after_permission(self):
+        def save(name, value): self.data[name] = value
+        with patch.object(spaces_app, "load_data", side_effect=lambda name: self.data[name]), patch.object(spaces_app, "save_data", side_effect=save):
+            with self.client.session_transaction() as session:
+                session["admin"] = True
+            response = self.client.put("/api/admin/venues", json={"name":"XICA LIBRARY", "new_name":"XICA LIBRARY",
+                "type":"Library", "capacity":60, "bookable":True})
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(self.data["venues"][0]["bookable"])
 
 if __name__ == "__main__":
     unittest.main()

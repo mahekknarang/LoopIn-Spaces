@@ -2,71 +2,85 @@
   {
     "name": "LR1",
     "type": "LR",
-    "capacity": 80
+    "capacity": 80,
+    "bookable": true
   },
   {
     "name": "LR2",
     "type": "LR",
-    "capacity": 80
+    "capacity": 80,
+    "bookable": true
   },
   {
     "name": "LR3",
     "type": "LR",
-    "capacity": 80
+    "capacity": 80,
+    "bookable": true
   },
   {
     "name": "LR4",
     "type": "LR",
-    "capacity": 80
+    "capacity": 80,
+    "bookable": true
   },
   {
     "name": "LR5",
     "type": "LR",
-    "capacity": 80
+    "capacity": 80,
+    "bookable": true
   },
   {
     "name": "LR6",
     "type": "LR",
-    "capacity": 80
+    "capacity": 80,
+    "bookable": true
   },
   {
     "name": "LAB1",
     "type": "Lab",
-    "capacity": 80
+    "capacity": 80,
+    "bookable": true
   },
   {
     "name": "LAB2",
     "type": "Lab",
-    "capacity": 80
+    "capacity": 80,
+    "bookable": true
   },
   {
     "name": "LAB3",
     "type": "Lab",
-    "capacity": 80
+    "capacity": 80,
+    "bookable": true
   },
   {
     "name": "LAB4",
     "type": "Lab",
-    "capacity": 80
+    "capacity": 80,
+    "bookable": true
   },
   {
     "name": "LAB5",
     "type": "Lab",
-    "capacity": 80
+    "capacity": 80,
+    "bookable": true
   },
   {
     "name": "BDA LAB",
     "type": "Lab",
-    "capacity": 80
+    "capacity": 80,
+    "bookable": true
   },
   {
     "name": "XICA AUDI",
     "type": "Hall",
-    "capacity": 200
+    "capacity": 200,
+    "bookable": true
   },
   {
     "name": "XICA LIBRARY",
     "type": "Library",
-    "capacity": 60
+    "capacity": 60,
+    "bookable": false
   }
 ]

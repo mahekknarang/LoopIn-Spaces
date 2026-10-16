@@ -56,6 +56,12 @@ function openClassDetails(venue, dateText, slot, lecture) {
   $$('[data-close]').forEach(button => button.onclick = closeModal);
 }
 
+function openPermissionNotice(venue, dateText, slot) {
+  $("#modal-content").innerHTML = `<div class="modal-head"><div><div class="section-kicker">SPECIAL PERMISSION REQUIRED</div><h2>${escapeHtml(venue)}</h2><p>This venue cannot be requested by students unless an administrator has enabled it after receiving permission.</p></div><button class="close" type="button" data-close aria-label="Close">×</button></div><dl class="class-details"><div><dt>Date</dt><dd>${escapeHtml(dateText)}</dd></div><div><dt>Period</dt><dd>${escapeHtml(slot)}</dd></div><div><dt>Next step</dt><dd>Contact an administrator about permission for this venue.</dd></div></dl><div class="form-actions"><button class="button primary" type="button" data-close>Done</button></div>`;
+  $("#modal").classList.remove("hidden");
+  $$('[data-close]').forEach(button => button.onclick = closeModal);
+}
+
 function closeModal() { $("#modal")?.classList.add("hidden"); }
 
 async function submitBooking(event) {
@@ -93,10 +99,11 @@ function drawGrid() {
     const chips = [];
     pageState.slots.forEach(slot => {
       const item = pageState.grid[venue.name]?.[slot] || { state: "free", label: "Open" };
-      const label = item.state === "lecture" ? item.label : item.state === "approved" ? "Booked" : item.state === "pending" ? "Pending" : "Open";
+      const label = item.state === "lecture" ? item.label : item.state === "approved" ? "Booked" : item.state === "pending" ? "Pending" : item.state === "restricted" ? "Permission required" : "Open";
       const open = ["free", "pending"].includes(item.state);
       const attributes = item.state === "lecture"
         ? `data-lecture="true" data-venue="${escapeHtml(venue.name)}" data-label="${escapeHtml(item.label)}" data-slot="${escapeHtml(slot)}" aria-label="View ${escapeHtml(item.label)} at ${escapeHtml(venue.name)}, ${escapeHtml(slot)}"`
+        : item.state === "restricted" ? `data-restricted="true" data-venue="${escapeHtml(venue.name)}" data-slot="${escapeHtml(slot)}" aria-label="${escapeHtml(venue.name)} requires special permission"`
         : open ? `data-venue="${escapeHtml(venue.name)}" data-slot="${escapeHtml(slot)}"`
           : `disabled title="${escapeHtml(label)}"`;
       const button = `<button class="slot-pill ${item.state}" ${attributes}>${escapeHtml(label)}</button>`;
@@ -107,8 +114,9 @@ function drawGrid() {
   });
   desktop.push("</div>"); mobile.push("</div>");
   host.innerHTML = desktop.join("") + mobile.join("");
-  $$(".slot-pill[data-slot]", host).forEach(button => button.onclick = () => openBooking(button.dataset.venue, pageState.date, button.dataset.slot));
+  $$(".slot-pill[data-slot][data-venue]:not([data-lecture]):not([data-restricted])", host).forEach(button => button.onclick = () => openBooking(button.dataset.venue, pageState.date, button.dataset.slot));
   $$(".slot-pill[data-lecture]", host).forEach(button => button.onclick = () => openClassDetails(button.dataset.venue, pageState.date, button.dataset.slot, button.dataset.label));
+  $$(".slot-pill[data-restricted]", host).forEach(button => button.onclick = () => openPermissionNotice(button.dataset.venue, pageState.date, button.dataset.slot));
 }
 
 async function searchVenues(prefix) {
@@ -317,16 +325,18 @@ async function saveLecture(venue, day, slot, lecture, replace = false) {
 
 function renderVenues() {
   const data = window.adminData, host = $("#admin-content"); host.className = "admin-panel";
-  host.innerHTML = `<div class="panel-title"><h2>Venues</h2><button class="button primary mini" id="add-venue">Add venue</button></div>${adminTable(data.venues.map(item => `<tr><td>${escapeHtml(item.name)}</td><td>${escapeHtml(item.type)}</td><td>${item.capacity}</td><td><button class="button secondary mini" data-edit-venue="${escapeHtml(item.name)}">Edit</button> <button class="button red mini" data-delete-venue="${escapeHtml(item.name)}">Delete</button></td></tr>`).join(""), ["NAME", "TYPE", "CAPACITY", "ACTION"])}`;
+  host.innerHTML = `<div class="panel-title"><h2>Venues</h2><button class="button primary mini" id="add-venue">Add venue</button></div>${adminTable(data.venues.map(item => `<tr><td>${escapeHtml(item.name)}</td><td>${escapeHtml(item.type)}</td><td>${item.capacity}</td><td>${item.bookable ? "Available" : "Permission required"}</td><td><button class="button secondary mini" data-edit-venue="${escapeHtml(item.name)}">Edit</button> <button class="button red mini" data-delete-venue="${escapeHtml(item.name)}">Delete</button></td></tr>`).join(""), ["NAME", "TYPE", "CAPACITY", "STUDENT BOOKINGS", "ACTION"])}`;
   $("#add-venue").onclick = () => editVenue();
   $$('[data-edit-venue]').forEach(button => button.onclick = () => editVenue(data.venues.find(item => item.name === button.dataset.editVenue)));
   $$('[data-delete-venue]').forEach(button => button.onclick = async () => { try { await api("/api/admin/venues", { method: "DELETE", body: JSON.stringify({ name: button.dataset.deleteVenue }) }); toast("Venue deleted."); await renderAdmin("Venues"); } catch (error) { toast(error.message); } });
 }
 
 function editVenue(old = null) {
-  $("#modal-content").innerHTML = `<h2>${old ? "Edit venue" : "Add venue"}</h2><form id="venue-form"><div class="form-grid"><div class="form-field"><label>NAME</label><input name="new_name" value="${escapeHtml(old?.name || "")}" required></div><div class="form-field"><label>TYPE</label><select name="type"><option ${old?.type === "LR" ? "selected" : ""}>LR</option><option ${old?.type === "Lab" ? "selected" : ""}>Lab</option><option ${old?.type === "Hall" ? "selected" : ""}>Hall</option><option ${old?.type === "Library" ? "selected" : ""}>Library</option></select></div><div class="form-field"><label>CAPACITY</label><input name="capacity" type="number" min="1" value="${old?.capacity || 80}" required></div></div><div class="form-actions"><button class="button secondary" type="button" data-close>Cancel</button><button class="button primary">Save venue</button></div></form>`;
+  const allowed = old ? old.bookable !== false && old.name.toUpperCase() !== "XICA LIBRARY" : true;
+  $("#modal-content").innerHTML = `<h2>${old ? "Edit venue" : "Add venue"}</h2><form id="venue-form"><div class="form-grid"><div class="form-field"><label>NAME</label><input id="venue-name" name="new_name" value="${escapeHtml(old?.name || "")}" required></div><div class="form-field"><label>TYPE</label><select name="type"><option ${old?.type === "LR" ? "selected" : ""}>LR</option><option ${old?.type === "Lab" ? "selected" : ""}>Lab</option><option ${old?.type === "Hall" ? "selected" : ""}>Hall</option><option ${old?.type === "Library" ? "selected" : ""}>Library</option></select></div><div class="form-field"><label>CAPACITY</label><input name="capacity" type="number" min="1" value="${old?.capacity || 80}" required></div><label class="bookable-setting"><input id="venue-bookable" type="checkbox" ${allowed ? "checked" : ""}><span><b>Allow student bookings</b><small>Keep this off until special permission is approved.</small></span></label></div><div class="form-actions"><button class="button secondary" type="button" data-close>Cancel</button><button class="button primary">Save venue</button></div></form>`;
   $("#modal").classList.remove("hidden"); $("[data-close]").onclick = closeModal;
-  $("#venue-form").onsubmit = async event => { event.preventDefault(); const payload = Object.fromEntries(new FormData(event.currentTarget)); if (old) payload.name = old.name; try { await api("/api/admin/venues", { method: old ? "PUT" : "POST", body: JSON.stringify(payload) }); closeModal(); toast("Venue saved."); await renderAdmin("Venues"); } catch (error) { toast(error.message); } };
+  $("#venue-name").oninput = event => { if (!old && event.target.value.trim().toUpperCase() === "XICA LIBRARY") $("#venue-bookable").checked = false; };
+  $("#venue-form").onsubmit = async event => { event.preventDefault(); const payload = Object.fromEntries(new FormData(event.currentTarget)); payload.bookable = $("#venue-bookable").checked; if (old) payload.name = old.name; try { await api("/api/admin/venues", { method: old ? "PUT" : "POST", body: JSON.stringify(payload) }); closeModal(); toast("Venue saved."); await renderAdmin("Venues"); } catch (error) { toast(error.message); } };
 }
 
 function escapeHtml(value) { return String(value ?? "").replace(/[&<>"']/g, char => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[char])); }
