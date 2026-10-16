@@ -23,6 +23,6 @@ def _load_local_env():
 
 _load_local_env()
 
-ADMIN_PIN = "1234"  # Change this before sharing the demo.
+ADMIN_PIN = os.environ.get("ADMIN_PIN", "1234")  # Override for deployed environments.
 SLOTS = ["9-10", "10-11", "11-12", "12-1", "2-3", "3-4", "4-5"]
 DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
