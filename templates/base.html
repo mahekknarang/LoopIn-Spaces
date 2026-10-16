@@ -1,10 +1,10 @@
 <!doctype html>
 <html lang="en">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="theme-color" content="#f7f7f3"><title>{% block title %}LoopIn Spaces{% endblock %}</title><link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v=7) }}"></head>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="theme-color" content="#f7f7f3"><title>{% block title %}LoopIn Spaces{% endblock %}</title><link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v=8) }}"></head>
 <body>
   <header class="topbar"><a class="brand" href="/"><span class="brand-mark">L</span><b>LoopIn</b><span class="brand-divider"></span><span>Spaces</span></a><nav><a class="nav-link" href="/how-it-works">How it works</a><a class="nav-link" href="/admin">Admin</a></nav></header>
   {% block content %}{% endblock %}
-  <footer><a class="brand" href="/"><span class="brand-mark">L</span><b>LoopIn</b><span class="brand-divider"></span><span>Spaces</span></a><span>Part of the LoopIn ecosystem</span></footer>
+  <footer><a class="brand" href="/"><span class="brand-mark">L</span><b>LoopIn</b><span class="brand-divider"></span><span>Spaces</span></a><div class="footer-meta"><span>Part of the LoopIn ecosystem</span><a class="developer-credit" href="https://www.instagram.com/mahekknarang/" target="_blank" rel="noopener noreferrer">Developed By Mahek Narang 🐨</a></div></footer>
   <div class="modal-backdrop hidden" id="modal"><section class="modal" id="modal-content"></section></div><div id="toast" class="toast" role="status"></div>
   {% block scripts %}{% endblock %}
 </body></html>
