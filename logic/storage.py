@@ -1,4 +1,4 @@
-"""JSON storage uses a lock and atomic replace to protect each write."""
+"""Local JSON storage and normalized Supabase persistence."""
 import json
 import os
 import threading
@@ -9,32 +9,61 @@ from config import DATA_DIR
 
 _file_lock = threading.RLock()
 
-def _supabase_request(method, name, value=None):
-    """Store JSON in Supabase when configured; credentials stay server-side."""
+
+def _supabase_request(path, method="GET", payload=None):
+    """Call the Supabase REST API using a server-only Secret/service-role key."""
     url = os.environ.get("SUPABASE_URL", "").rstrip("/")
     key = os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "")
     if not url or not key:
         return None
     if key.startswith("sb_publishable_"):
         raise RuntimeError("SUPABASE_SERVICE_ROLE_KEY must contain the Supabase Secret key, not the Publishable key.")
-    query = urllib.parse.urlencode({"name": "eq." + name, "select": "data"})
-    endpoint = url + "/rest/v1/spaces_store?" + query
     headers = {"apikey": key, "Accept": "application/json"}
-    # New sb_secret keys are opaque API keys, not JWTs. Legacy service_role keys are JWTs.
     if not key.startswith("sb_secret_"):
         headers["Authorization"] = "Bearer " + key
-    if method == "GET":
-        req = urllib.request.Request(endpoint, headers=headers)
-        with urllib.request.urlopen(req, timeout=8) as response:
-            rows = json.loads(response.read().decode("utf-8"))
-        return rows[0]["data"] if rows else None
-    headers.update({"Content-Type": "application/json", "Prefer": "resolution=merge-duplicates,return=minimal"})
-    endpoint = url + "/rest/v1/spaces_store?on_conflict=name"
-    payload = json.dumps({"name": name, "data": value}).encode("utf-8")
-    req = urllib.request.Request(endpoint, data=payload, headers=headers, method="POST")
-    with urllib.request.urlopen(req, timeout=8) as response:
-        response.read()
-    return True
+    data = None
+    if payload is not None:
+        data = json.dumps(payload).encode("utf-8")
+        headers["Content-Type"] = "application/json"
+    req = urllib.request.Request(url + "/rest/v1/" + path, data=data, headers=headers, method=method)
+    with urllib.request.urlopen(req, timeout=12) as response:
+        body = response.read().decode("utf-8")
+    return json.loads(body) if body else None
+
+
+def _read_supabase(name):
+    if name == "venues":
+        rows = _supabase_request("venues?select=name,type,capacity&order=name")
+        return [{"name": row["name"], "type": row["type"], "capacity": row["capacity"]} for row in rows]
+    if name == "timetable":
+        rows = _supabase_request("timetable?select=venue_name,day,slot,lecture&order=venue_name,day,slot")
+        return [{"venue": row["venue_name"], "day": row["day"], "slot": row["slot"], "lecture": row["lecture"]} for row in rows]
+    if name == "bookings":
+        rows = _supabase_request("bookings?select=id,name,contact,event_name,purpose,venue_name,booking_date,status,reason,created_at,approved_at&order=created_at")
+        if not rows:
+            return []
+        ids = [row["id"] for row in rows]
+        encoded_ids = ",".join('"{}"'.format(value.replace('"', '\\"')) for value in ids)
+        slots = _supabase_request("booking_slots?select=booking_id,slot&booking_id=in.({})".format(urllib.parse.quote(encoded_ids, safe=",\"")))
+        by_booking = {}
+        for row in slots:
+            by_booking.setdefault(row["booking_id"], []).append(row["slot"])
+        result = []
+        for row in rows:
+            result.append({"id": row["id"], "name": row["name"], "contact": row["contact"], "event": row["event_name"],
+                           "purpose": row["purpose"], "venue": row["venue_name"], "date": row["booking_date"],
+                           "slots": by_booking.get(row["id"], []), "status": row["status"], "reason": row["reason"] or "",
+                           "created_at": row["created_at"], "approved_at": row["approved_at"]})
+        return result
+    raise ValueError("Unknown data collection: {}".format(name))
+
+
+def _write_supabase(name, value):
+    functions = {"venues": "loopin_save_venues", "timetable": "loopin_save_timetable", "bookings": "loopin_save_bookings"}
+    if name not in functions:
+        raise ValueError("Unknown data collection: {}".format(name))
+    _supabase_request("rpc/" + functions[name], method="POST", payload={"p_data": value})
+
 
 @contextmanager
 def _process_file_lock():
@@ -63,24 +92,22 @@ def _process_file_lock():
             finally:
                 fcntl.flock(lock_file.fileno(), fcntl.LOCK_UN)
 
+
 def read_json(name):
-    """Read one JSON file while no other thread is replacing it."""
+    """Read a collection from Supabase, or the local JSON file if unconfigured."""
     remote_enabled = bool(os.environ.get("SUPABASE_URL") and os.environ.get("SUPABASE_SERVICE_ROLE_KEY"))
-    if os.environ.get("SUPABASE_URL") and os.environ.get("SUPABASE_SERVICE_ROLE_KEY"):
-        remote = _supabase_request("GET", name)
-        if remote is not None:
-            return remote
+    if remote_enabled:
+        # An empty remote table is a legitimate value; never seed it from stale local demo files.
+        return _read_supabase(name)
     with _file_lock, _process_file_lock():
         with (DATA_DIR / (name + ".json")).open(encoding="utf-8") as file:
-            value = json.load(file)
-    if remote_enabled:
-        _supabase_request("POST", name, value)
-    return value
+            return json.load(file)
+
 
 def write_json(name, value):
-    """Write a full JSON copy first, then swap it into place safely."""
+    """Persist one collection atomically (SQL function on Supabase, file locally)."""
     if os.environ.get("SUPABASE_URL") and os.environ.get("SUPABASE_SERVICE_ROLE_KEY"):
-        _supabase_request("POST", name, value)
+        _write_supabase(name, value)
         return
     DATA_DIR.mkdir(exist_ok=True)
     path = DATA_DIR / (name + ".json")

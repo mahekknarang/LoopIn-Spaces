@@ -271,8 +271,8 @@ def venues_edit():
     raw_name = payload.get("name", "")
     name = raw_name.strip() if isinstance(raw_name, str) else ""
     if request.method == "DELETE":
-        if any(b["venue"] == name and b["status"] == "Approved" and b["date"] >= date.today().isoformat() for b in load_data("bookings")):
-            return jsonify({"error": "This venue has an approved future booking."}), 409
+        if any(b["venue"] == name for b in load_data("bookings")):
+            return jsonify({"error": "This venue has booking history. Keep it in the venue list so those records remain linked."}), 409
         venues = [v for v in venues if v["name"] != name]
         save_data("timetable", [r for r in load_data("timetable") if r["venue"] != name])
         save_data("venues", venues)
@@ -293,6 +293,11 @@ def venues_edit():
         if new_name.lower() != name.lower() and any(v["name"].lower() == new_name.lower() for v in venues):
             return jsonify({"error": "A venue with that name already exists."}), 400
         if new_name != name:
+            # Keep both names available while child rows move; the database
+            # enforces venue references for timetable and booking records.
+            old_venue = dict(target)
+            target.update(name=new_name, type=kind, capacity=capacity)
+            save_data("venues", venues + [old_venue])
             timetable = load_data("timetable")
             for row in timetable:
                 if row["venue"] == name:
@@ -304,7 +309,8 @@ def venues_edit():
                     booking["venue"] = new_name
             save_data("bookings", bookings)
             rebuild_pending_queue()
-        target.update(name=new_name, type=kind, capacity=capacity)
+        else:
+            target.update(name=new_name, type=kind, capacity=capacity)
     else:
         if any(v["name"].lower() == new_name.lower() for v in venues):
             return jsonify({"error": "A venue with that name already exists."}), 400

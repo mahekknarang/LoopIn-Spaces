@@ -1,6 +1,6 @@
 # LoopIn: Spaces
 
-A small Flask venue planner for booking college rooms. It shows a weekly lecture timetable and date-specific reservations, accepts requests without user accounts, and lets an admin approve or reject requests. By default, data is stored in readable JSON files. For deployment, the app can use Supabase through its REST API (no Supabase client package required).
+A small Flask venue planner for booking college rooms. It shows a weekly lecture timetable and date-specific reservations, accepts requests without user accounts, and lets an admin approve or reject requests. By default, data is stored in readable JSON files. For deployment, the app can use normalized Supabase tables through its REST API (no Supabase client package required).
 
 ## Start on Mac
 
@@ -60,7 +60,16 @@ In Admin → Timetable, upload the original college timetable PDF or a clear ima
    - `SUPABASE_SERVICE_ROLE_KEY` — paste the Supabase **Secret key** (`sb_secret_…`), not the Publishable key. A legacy `service_role` key also works. Keep it server-side and out of GitHub
    - `LOOPIN_SECRET_KEY` — a long random value for Flask sessions
    - `ADMIN_PIN` — change the local demo PIN before sharing; set this in Render for the deployed admin PIN
-5. Start locally with `bash run.sh`, or redeploy Render. When both Supabase variables are present, venue, timetable, and booking data use the `spaces_store` table. On first connection, the current local JSON files seed any missing Supabase rows. Here the timetable and bookings are empty so your new database starts fresh; the 14 venue definitions are retained.
+5. After the SQL completes, start locally with `bash run.sh`, or redeploy Render. The app reads and writes separate `venues`, `timetable`, `bookings`, and `booking_slots` tables. The SQL copies any existing `spaces_store` data into those tables and leaves the old table in place as a backup. Once connected, an empty Supabase table remains empty; local demo JSON files are never copied over your database.
+
+### What is stored
+
+- `venues`: one row per space, with its type and capacity.
+- `timetable`: one row per room, weekday, and period, with the class occupying it.
+- `bookings`: one row per request, including requester/contact, purpose, room, date, status, and decision reason.
+- `booking_slots`: one row per period requested, linked to its booking and removed automatically when that booking is deleted.
+
+Row Level Security is enabled with no public access policies. The app uses the server-side Supabase key. The existing `spaces_store` backup table is not used by the new app.
 
 Never add the service-role key to JavaScript, paste it into chat, or commit `.env` to the repository. Render's filesystem may reset between deploys, so Supabase is recommended for persistent bookings.
 
