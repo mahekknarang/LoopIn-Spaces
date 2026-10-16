@@ -1,0 +1,200 @@
+[
+  {
+    "venue": "LR1",
+    "day": "Monday",
+    "slot": "9-10",
+    "lecture": "DSA"
+  },
+  {
+    "venue": "LR1",
+    "day": "Monday",
+    "slot": "10-11",
+    "lecture": "DSA"
+  },
+  {
+    "venue": "LR1",
+    "day": "Monday",
+    "slot": "2-3",
+    "lecture": "DBMS"
+  },
+  {
+    "venue": "LR2",
+    "day": "Monday",
+    "slot": "11-12",
+    "lecture": "OS"
+  },
+  {
+    "venue": "LR2",
+    "day": "Tuesday",
+    "slot": "9-10",
+    "lecture": "Maths"
+  },
+  {
+    "venue": "LR2",
+    "day": "Wednesday",
+    "slot": "3-4",
+    "lecture": "CN"
+  },
+  {
+    "venue": "LR3",
+    "day": "Tuesday",
+    "slot": "10-11",
+    "lecture": "Java"
+  },
+  {
+    "venue": "LR3",
+    "day": "Tuesday",
+    "slot": "11-12",
+    "lecture": "Java"
+  },
+  {
+    "venue": "LR3",
+    "day": "Thursday",
+    "slot": "2-3",
+    "lecture": "AI"
+  },
+  {
+    "venue": "LAB1",
+    "day": "Monday",
+    "slot": "3-4",
+    "lecture": "Python Lab"
+  },
+  {
+    "venue": "LAB1",
+    "day": "Tuesday",
+    "slot": "9-10",
+    "lecture": "DSA Lab"
+  },
+  {
+    "venue": "LAB1",
+    "day": "Wednesday",
+    "slot": "10-11",
+    "lecture": "Web Lab"
+  },
+  {
+    "venue": "LAB1",
+    "day": "Friday",
+    "slot": "2-3",
+    "lecture": "DBMS Lab"
+  },
+  {
+    "venue": "LAB2",
+    "day": "Monday",
+    "slot": "9-10",
+    "lecture": "Electronics Lab"
+  },
+  {
+    "venue": "LAB2",
+    "day": "Wednesday",
+    "slot": "11-12",
+    "lecture": "Java Lab"
+  },
+  {
+    "venue": "LAB2",
+    "day": "Thursday",
+    "slot": "10-11",
+    "lecture": "Networks Lab"
+  },
+  {
+    "venue": "LAB2",
+    "day": "Saturday",
+    "slot": "9-10",
+    "lecture": "Project Lab"
+  },
+  {
+    "venue": "XICA AUDI",
+    "day": "Tuesday",
+    "slot": "2-3",
+    "lecture": "Guest Talk"
+  },
+  {
+    "venue": "XICA AUDI",
+    "day": "Wednesday",
+    "slot": "9-10",
+    "lecture": "Placement Prep"
+  },
+  {
+    "venue": "XICA AUDI",
+    "day": "Thursday",
+    "slot": "11-12",
+    "lecture": "Workshop"
+  },
+  {
+    "venue": "XICA AUDI",
+    "day": "Friday",
+    "slot": "10-11",
+    "lecture": "Club Meet"
+  },
+  {
+    "venue": "LR1",
+    "day": "Wednesday",
+    "slot": "9-10",
+    "lecture": "Algorithms"
+  },
+  {
+    "venue": "LR2",
+    "day": "Thursday",
+    "slot": "3-4",
+    "lecture": "Statistics"
+  },
+  {
+    "venue": "LR3",
+    "day": "Friday",
+    "slot": "9-10",
+    "lecture": "Machine Learning"
+  },
+  {
+    "venue": "LR1",
+    "day": "Saturday",
+    "slot": "10-11",
+    "lecture": "Tutorial"
+  },
+  {
+    "venue": "LR4",
+    "day": "Thursday",
+    "slot": "2-3",
+    "lecture": "Web Lab"
+  },
+  {
+    "venue": "LR5",
+    "day": "Friday",
+    "slot": "3-4",
+    "lecture": "Java"
+  },
+  {
+    "venue": "LR6",
+    "day": "Saturday",
+    "slot": "9-10",
+    "lecture": "Networks Lab"
+  },
+  {
+    "venue": "LAB3",
+    "day": "Wednesday",
+    "slot": "2-3",
+    "lecture": "Maths"
+  },
+  {
+    "venue": "LAB4",
+    "day": "Thursday",
+    "slot": "3-4",
+    "lecture": "Python Lab"
+  },
+  {
+    "venue": "LAB5",
+    "day": "Friday",
+    "slot": "9-10",
+    "lecture": "Web Lab"
+  },
+  {
+    "venue": "BDA LAB",
+    "day": "Saturday",
+    "slot": "10-11",
+    "lecture": "Java"
+  },
+  {
+    "venue": "XICA LIBRARY",
+    "day": "Tuesday",
+    "slot": "2-3",
+    "lecture": "Project Lab"
+  }
+]

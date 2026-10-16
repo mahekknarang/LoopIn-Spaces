@@ -1,0 +1,3 @@
+{% extends "base.html" %}
+{% block title %}Check request · LoopIn{% endblock %}
+{% block content %}<main class="status-page"><a class="back-link" href="/">Home</a><div class="section-kicker">REQUEST STATUS</div><h1>Where’s it at?</h1><p>Enter the Request ID you received after sending your booking.</p><form class="status-form" id="check-form"><label for="request-id">REQUEST ID</label><input id="request-id" name="id" required placeholder="BK-1024"><button class="button primary">Check status</button></form><div id="check-result" aria-live="polite"></div></main>{% endblock %}{% block scripts %}<script src="{{ url_for('static', filename='js/app.js', v=2) }}"></script>{% endblock %}
