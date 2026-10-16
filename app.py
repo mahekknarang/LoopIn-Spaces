@@ -4,6 +4,7 @@ import hmac
 import os
 import socket
 import time
+from concurrent.futures import ThreadPoolExecutor
 from datetime import date, datetime, timedelta
 from functools import wraps
 from flask import Flask, jsonify, render_template, request, session
@@ -25,6 +26,13 @@ PENDING_QUEUE = None
 def load_data(name):
     return read_json(name)
 
+def load_collections(*names):
+    """Read independent data collections concurrently (especially useful with Supabase)."""
+    if len(names) < 2:
+        return tuple(load_data(name) for name in names)
+    with ThreadPoolExecutor(max_workers=len(names)) as executor:
+        return tuple(executor.map(load_data, names))
+
 def save_data(name, data):
     write_json(name, data)
 
@@ -41,8 +49,6 @@ def venue_day_grid(venue, day, date_text, timetable, bookings):
     if not venue_is_bookable(venue):
         return {slot: {"state": "restricted", "label": "Special permission required"} for slot in SLOTS}
     return {slot: slot_status(venue["name"], day, date_text, slot, timetable, bookings) for slot in SLOTS}
-
-rebuild_pending_queue()
 
 def admin_required(fn):
     @wraps(fn)
@@ -76,7 +82,7 @@ def how_it_works():
 
 @app.get("/api/bootstrap")
 def bootstrap():
-    venues, timetable, bookings = load_data("venues"), load_data("timetable"), load_data("bookings")
+    venues, timetable, bookings = load_collections("venues", "timetable", "bookings")
     today = date.today().isoformat()
     day = date.today().strftime("%A")
     grid = {v["name"]: venue_day_grid(v, day, today, timetable, bookings) for v in venues}
@@ -92,7 +98,7 @@ def grid():
         day = date.fromisoformat(date_text).strftime("%A")
     except ValueError:
         return jsonify({"error": "Choose a valid date."}), 400
-    venues, timetable, bookings = load_data("venues"), load_data("timetable"), load_data("bookings")
+    venues, timetable, bookings = load_collections("venues", "timetable", "bookings")
     result = {v["name"]: venue_day_grid(v, day, date_text, timetable, bookings) for v in venues}
     return jsonify({"grid": result, "venues": venues, "slots": sort_slots(SLOTS, SLOTS), "day": day})
 
@@ -105,7 +111,7 @@ def search_venues():
 @app.post("/api/requests")
 def create_request():
     payload = request.get_json(silent=True) or {}
-    venues, timetable, bookings = load_data("venues"), load_data("timetable"), load_data("bookings")
+    venues, timetable, bookings = load_collections("venues", "timetable", "bookings")
     error = check_request(payload, venues, timetable, bookings)
     if error:
         return jsonify({"error": error}), 400
@@ -141,7 +147,7 @@ def find_venue():
             raise ValueError
     except (ValueError, TypeError):
         return jsonify({"error": "Choose a future date, a positive group size, and 1–7 hours."}), 400
-    venues, timetable, bookings = load_data("venues"), load_data("timetable"), load_data("bookings")
+    venues, timetable, bookings = load_collections("venues", "timetable", "bookings")
     day, results = target.strftime("%A"), []
     for venue in venues:
         if not venue_is_bookable(venue) or venue["capacity"] < people:
@@ -187,9 +193,9 @@ def admin_logout():
 @app.get("/api/admin/data")
 @admin_required
 def admin_data():
-    bookings = load_data("bookings")
+    venues, timetable, bookings = load_collections("venues", "timetable", "bookings")
     queue = PENDING_QUEUE or pending_queue(bookings)
-    return jsonify({"venues": load_data("venues"), "timetable": load_data("timetable"),
+    return jsonify({"venues": venues, "timetable": timetable,
                     "requests": queue.to_list(), "history": sort_history([b for b in bookings if b["status"] != "Pending"]), "slots": SLOTS, "days": DAYS})
 
 @app.post("/api/admin/requests/<request_id>")

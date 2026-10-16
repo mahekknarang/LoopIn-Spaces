@@ -12,6 +12,10 @@ select{appearance:none;-webkit-appearance:none;display:block;width:100%;min-heig
 
 /* Keep some breathing room on the landing page while keeping the footer within the first screen. */
 .home-page{min-height:calc(90vh - 145px);padding:clamp(64px,12vh,125px) 10px 54px}
+
+/* Let compact utility pages end with their content instead of forcing a tall blank screen. */
+.admin-wrap{min-height:0;margin-bottom:24px}
+.status-page,.pin-page{min-height:0}
 @media(max-width:760px){.home-page{min-height:calc(88vh - 136px);padding:clamp(58px,10vh,94px) 6% 46px}}
 @media(max-width:639px){.home-page{min-height:calc(86vh - 136px);padding:72px 6% 38px}}
 
