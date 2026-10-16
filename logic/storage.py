@@ -15,9 +15,14 @@ def _supabase_request(method, name, value=None):
     key = os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "")
     if not url or not key:
         return None
+    if key.startswith("sb_publishable_"):
+        raise RuntimeError("SUPABASE_SERVICE_ROLE_KEY must contain the Supabase Secret key, not the Publishable key.")
     query = urllib.parse.urlencode({"name": "eq." + name, "select": "data"})
     endpoint = url + "/rest/v1/spaces_store?" + query
-    headers = {"apikey": key, "Authorization": "Bearer " + key, "Accept": "application/json"}
+    headers = {"apikey": key, "Accept": "application/json"}
+    # New sb_secret keys are opaque API keys, not JWTs. Legacy service_role keys are JWTs.
+    if not key.startswith("sb_secret_"):
+        headers["Authorization"] = "Bearer " + key
     if method == "GET":
         req = urllib.request.Request(endpoint, headers=headers)
         with urllib.request.urlopen(req, timeout=8) as response:

@@ -54,10 +54,10 @@ In Admin → Timetable, upload a clear image. Browser OCR automatically imports 
 
 1. Create a Supabase project.
 2. Open **SQL Editor** and run the contents of `supabase_schema.sql`.
-3. In the Supabase project settings, copy the project URL and the **service_role** key.
+3. In the Supabase project settings, copy the project URL and the server-side **Secret key** (not the Publishable key).
 4. For local development, copy `.env.example` to `.env` and fill in the values. The app reads `.env` automatically; it is ignored by Git. For Render, add the same variables in **Dashboard → Environment**:
    - `SUPABASE_URL` — project URL
-   - `SUPABASE_SERVICE_ROLE_KEY` — service-role secret; keep it server-side and out of GitHub
+   - `SUPABASE_SERVICE_ROLE_KEY` — paste the Supabase **Secret key** (`sb_secret_…`), not the Publishable key. A legacy `service_role` key also works. Keep it server-side and out of GitHub
    - `LOOPIN_SECRET_KEY` — a long random value for Flask sessions
 5. Start locally with `bash run.sh`, or redeploy Render. When both Supabase variables are present, venue, timetable, and booking data use the `spaces_store` table. On first connection, the current local JSON files seed any missing Supabase rows. Here the timetable and bookings are empty so your new database starts fresh; the 14 venue definitions are retained.
 
